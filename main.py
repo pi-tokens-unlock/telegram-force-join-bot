@@ -5,7 +5,7 @@ import logging
 import threading
 from flask import Flask
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8497346456:AAGipE0USyf46DnqvOyGunkHFNZe0gmt7hc")
 CHANNEL = "@PInetAnnouncement"
 
 logging.basicConfig(level=logging.INFO)
