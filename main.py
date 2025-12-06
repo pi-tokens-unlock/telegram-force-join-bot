@@ -111,4 +111,3 @@ if __name__ == "__main__":
         main()
     else:
         logging.error("BOT_TOKEN environment variable not found. Check Render configuration.")
-
