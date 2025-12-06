@@ -4,20 +4,24 @@ from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQuery
 from flask import Flask, request # Flask এবং request ইমপোর্ট করা হয়েছে
 import logging
 
-# --- কনফিগারেশন ভেরিয়েবল ---
-# এই ভেরিয়েবলগুলো Render ড্যাশবোর্ডে সেট করা আবশ্যক
+# --- কনফিগারেশন ভেরিয়েবল (Render থেকে লোড হবে) ---
 TOKEN = os.getenv("BOT_TOKEN")
+# Render সার্ভারের জন্য পোর্ট
 PORT = int(os.environ.get("PORT", 5000)) 
 CHANNEL = "@PInetAnnouncement"
+# Render-এর পাবলিক URL
 WEBHOOK_URL = os.getenv("WEBHOOK_URL") 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 # Updater এবং Dispatcher গ্লোবাল হিসাবে সেট করা হলো
-# যাতে Webhook ফাংশন এটি অ্যাক্সেস করতে পারে
-updater = Updater(TOKEN, use_context=True)
-dp = updater.dispatcher
+if TOKEN:
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+else:
+    logging.error("BOT_TOKEN environment variable not found. Exiting.")
+    exit() # টোকেন না পেলে বন্ধ করে দেওয়া হলো
 
 # --- বটের মূল লজিক (অপরিবর্তিত) ---
 
@@ -69,13 +73,10 @@ def check_btn(update: Update, context: CallbackContext):
 
 # --- Webhook রুট ---
 
-# 1. Render এর স্বাস্থ্য পরীক্ষার জন্য রুট
 @app.route('/')
 def home():
     return "Telegram Bot is Running via Webhook on Render!"
 
-# 2. Telegram থেকে আপডেট গ্রহণের জন্য মূল ওয়েবহুক রুট
-# সুরক্ষার জন্য URL-এ BOT_TOKEN ব্যবহার করা হয়
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
     if request.method == "POST":
@@ -93,20 +94,21 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CallbackQueryHandler(check_btn))
     
-    # Webhook সেট করা (খুব গুরুত্বপূর্ণ)
+    # Webhook সেট করা
     if WEBHOOK_URL and TOKEN:
         # set_webhook এ সম্পূর্ণ URL দিতে হবে
         webhook_url_full = WEBHOOK_URL.rstrip('/') + f'/{TOKEN}'
         updater.bot.set_webhook(url=webhook_url_full) 
         logging.info(f"Webhook set to: {webhook_url_full}")
     else:
-        logging.error("WEBHOOK_URL or BOT_TOKEN not set. Running locally or setup error.")
+        logging.error("WEBHOOK_URL not set in environment variables.")
 
-    # Flask অ্যাপ চালানো (এটি সার্ভারকে সচল রাখবে)
+    # Flask অ্যাপ চালানো
     app.run(host="0.0.0.0", port=PORT, use_reloader=False)
 
 if __name__ == "__main__":
     if TOKEN:
         main()
     else:
-        logging.error("BOT_TOKEN environment variable not found. Exiting.")
+        logging.error("BOT_TOKEN environment variable not found. Check Render configuration.")
+
