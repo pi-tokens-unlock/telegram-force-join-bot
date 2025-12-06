@@ -17,7 +17,8 @@ def home():
     return "Telegram Bot is Running 24/7 on Render!"
 
 def run_flask():
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get("PORT", 10000))  # ✅ Render PORT FIX
+    app.run(host='0.0.0.0', port=port)
 
 def start(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
